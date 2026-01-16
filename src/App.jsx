@@ -41,42 +41,42 @@ import axios from "axios";
  */
 
 // --- 模擬資料與靜態內容 ---
-// const MOCK_PRODUCTS = [
-//   {
-//     id: "p001",
-//     title: "[賣]動物園造型衣服3",
-//     category: "衣服2",
-//     origin_price: 100,
-//     price: 300,
-//     unit: "個",
-//     description: "Sit down please 名設計師設計",
-//     content: "這是一件非常有設計感的衣服，穿上它你就是焦點。",
-//     is_enabled: 1,
-//     imageUrl:
-//       "https://images.unsplash.com/photo-1535573350713-b5a1ec45f2b3?auto=format&fit=crop&q=80&w=400",
-//     imagesUrl: [
-//       "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=200",
-//       "",
-//       "",
-//       "",
-//       "",
-//     ],
-//   },
-//   {
-//     id: "p002",
-//     title: "特製拿鐵咖啡",
-//     category: "飲品",
-//     origin_price: 150,
-//     price: 120,
-//     unit: "杯",
-//     description: "香醇濃郁的義式咖啡",
-//     content: "選用衣索比亞精品咖啡豆，職人烘焙。",
-//     is_enabled: 1,
-//     imageUrl:
-//       "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400",
-//     imagesUrl: ["", "", "", "", ""],
-//   },
-// ];
+const MOCK_PRODUCTS = [
+  {
+    id: "p001",
+    title: "[賣]動物園造型衣服3",
+    category: "衣服2",
+    origin_price: 100,
+    price: 300,
+    unit: "個",
+    description: "Sit down please 名設計師設計",
+    content: "這是一件非常有設計感的衣服，穿上它你就是焦點。",
+    is_enabled: 1,
+    imageUrl:
+      "https://images.unsplash.com/photo-1535573350713-b5a1ec45f2b3?auto=format&fit=crop&q=80&w=400",
+    imagesUrl: [
+      "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=200",
+      "",
+      "",
+      "",
+      "",
+    ],
+  },
+  {
+    id: "p002",
+    title: "特製拿鐵咖啡",
+    category: "飲品",
+    origin_price: 150,
+    price: 120,
+    unit: "杯",
+    description: "香醇濃郁的義式咖啡",
+    content: "選用衣索比亞精品咖啡豆，職人烘焙。",
+    is_enabled: 1,
+    imageUrl:
+      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400",
+    imagesUrl: ["", "", "", "", ""],
+  },
+];
 
 const JSON_EXAMPLE_DATA = [
   {
@@ -294,7 +294,7 @@ function App() {
 
   const handleInputChange = (setter, state, field, value) => {
     setter({ ...state, [field]: value });
-    // console.log(field+" -> "+value);
+    console.log(field+" -> "+value);
   };
 
   // const handleCreateProdustInputChange=(e)=>{
@@ -314,7 +314,7 @@ function App() {
 
   //註冊輸入框
   const handleRegisterInputChange = (e) => {
-    const { name, value } = e;
+    const { name, value } = e.target;
     console.log(name, value);
     setRegisterData({
       ...registerData,
@@ -337,7 +337,7 @@ function App() {
 
   //登入
   const handleLoginInputChange = (e) => {
-    const { name, value } = e;
+    const { name, value } = e.target;
     console.log(name, value);
     setLoginData({
       ...loginData,
