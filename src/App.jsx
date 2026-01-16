@@ -41,42 +41,42 @@ import axios from "axios";
  */
 
 // --- 模擬資料與靜態內容 ---
-const MOCK_PRODUCTS = [
-  {
-    id: "p001",
-    title: "[賣]動物園造型衣服3",
-    category: "衣服2",
-    origin_price: 100,
-    price: 300,
-    unit: "個",
-    description: "Sit down please 名設計師設計",
-    content: "這是一件非常有設計感的衣服，穿上它你就是焦點。",
-    is_enabled: 1,
-    imageUrl:
-      "https://images.unsplash.com/photo-1535573350713-b5a1ec45f2b3?auto=format&fit=crop&q=80&w=400",
-    imagesUrl: [
-      "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=200",
-      "",
-      "",
-      "",
-      "",
-    ],
-  },
-  {
-    id: "p002",
-    title: "特製拿鐵咖啡",
-    category: "飲品",
-    origin_price: 150,
-    price: 120,
-    unit: "杯",
-    description: "香醇濃郁的義式咖啡",
-    content: "選用衣索比亞精品咖啡豆，職人烘焙。",
-    is_enabled: 1,
-    imageUrl:
-      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400",
-    imagesUrl: ["", "", "", "", ""],
-  },
-];
+// const MOCK_PRODUCTS = [
+//   {
+//     id: "p001",
+//     title: "[賣]動物園造型衣服3",
+//     category: "衣服2",
+//     origin_price: 100,
+//     price: 300,
+//     unit: "個",
+//     description: "Sit down please 名設計師設計",
+//     content: "這是一件非常有設計感的衣服，穿上它你就是焦點。",
+//     is_enabled: 1,
+//     imageUrl:
+//       "https://images.unsplash.com/photo-1535573350713-b5a1ec45f2b3?auto=format&fit=crop&q=80&w=400",
+//     imagesUrl: [
+//       "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=200",
+//       "",
+//       "",
+//       "",
+//       "",
+//     ],
+//   },
+//   {
+//     id: "p002",
+//     title: "特製拿鐵咖啡",
+//     category: "飲品",
+//     origin_price: 150,
+//     price: 120,
+//     unit: "杯",
+//     description: "香醇濃郁的義式咖啡",
+//     content: "選用衣索比亞精品咖啡豆，職人烘焙。",
+//     is_enabled: 1,
+//     imageUrl:
+//       "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400",
+//     imagesUrl: ["", "", "", "", ""],
+//   },
+// ];
 
 const JSON_EXAMPLE_DATA = [
   {
@@ -255,7 +255,7 @@ function App() {
     origin_price: 0,
     price: 0,
   });
-  const [products, setProducts] = useState(MOCK_PRODUCTS);
+  const [products, setProducts] = useState([]);
 
   const [jsonInput, setJsonInput] = useState([]);
   // const [addPath, setAddPath] = useState(""); //新增Path
@@ -1188,7 +1188,7 @@ function App() {
   // --- 分頁內容渲染器 ---
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans antialiased overflow-x-hidden text-slate-800 dark:text-white">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans antialiased overflow-x-hidden text-slate-800 dark:text-white">
       {/* Sidebar - Final Symmetry Fix */}
       <aside
         className={`
