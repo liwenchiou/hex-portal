@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   UserPlus,
   LogIn,
@@ -126,7 +126,14 @@ const ModalWrapper = ({ title, icon, children, onClose }) => (
 );
 
 // 2. 側邊欄導覽項目
-const NavItem = ({ active, onClick, icon: Icon, label, expanded,disabled }) => (
+const NavItem = ({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  expanded,
+  disabled,
+}) => (
   <button
     // HTML 原生屬性，當為 true 時會自動攔截 onClick
     disabled={disabled}
@@ -179,7 +186,7 @@ const FormField = ({
     <input
       type={type}
       value={value ?? ""}
-      onChange={(e) => onChange(e.target)}
+      onChange={onChange??""}
       name={name ?? ""}
       className="w-full p-4 rounded-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-slate-800 dark:text-slate-200 shadow-sm"
     />
@@ -215,7 +222,8 @@ const PageTitle = ({ icon: Icon, title, subtitle, extra }) => (
 function App() {
   const [registerData, setRegisterData] = useState({}); //儲存註冊表單
   const [loginData, setLoginData] = useState({}); //儲存登入表單
-  const [tokenData, setTokenData] = useState(''); //儲存token
+  const [tokenData, setTokenData] = useState(""); //儲存token
+  // const [uid, setUid] = useState(""); //儲存uid
   const [activeTab, setActiveTab] = useState("register");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -226,34 +234,46 @@ function App() {
 
   // 初始化商品資料模板
   const emptyProductTemplate = {
-    title: "",
-    category: "",
-    origin_price: 0,
-    price: 0,
-    unit: "",
-    description: "",
-    content: "",
-    is_enabled: 1,
-    imageUrl: "",
-    imagesUrl: ["", "", "", "", ""],
-    id: "",
-  };
+  "title": "",
+  "category": "",
+  "origin_price": 0,
+  "price": 0,
+  "unit": "",
+  "description": "",
+  "content": "",
+  "is_enabled": 0,
+  "imageUrl": "",
+  "imagesUrl": [
+    "",
+    "",
+    "",
+    "",
+    ""
+  ]
+};
 
   // 資料狀態管理
   const [tempProduct, setTempProduct] = useState(emptyProductTemplate);
   const [productData, setProductData] = useState({
     ...emptyProductTemplate,
-    origin_price: 100,
-    price: 300,
+    origin_price: 0,
+    price: 0,
   });
-  const [jsonInput, setJsonInput] = useState("");
-  const [path, setPath] = useState("");
+  const [products,setProducts]=useState(MOCK_PRODUCTS);
 
+  const [jsonInput, setJsonInput] = useState("");
+  // const [addPath, setAddPath] = useState(""); //新增Path
+  const [selectPath, setSelectPath] = useState(""); //選定Path
+  const [isPath, setIsPath] = useState(false); //Path 確認狀態
+  const [selectPathData, setSelectPathData] = useState(""); //已確認的Path
   // 事件處理程序
   const handleLogout = () => {
     setActiveTab("login");
     setTokenData("");
-  }
+    document.cookie = `hexToken=; expires=; uid= `;
+    document.cookie = `hexUid=; `;
+    setIsPath(false);
+  };
 
   const closeModals = () => {
     setIsModalOpen(false);
@@ -275,8 +295,16 @@ function App() {
     setIsDelModalOpen(true);
   };
 
-  const handleInputChange = (setter, state, field, value) =>
+  const handleInputChange = (setter, state, field, value) =>{
     setter({ ...state, [field]: value });
+    // console.log(field+" -> "+value);
+  }
+
+  // const handleCreateProdustInputChange=(e)=>{
+  //   // const{name,value}=e.target;
+  //   console.log(e.value);
+  // }
+
 
   const handleSubImgChange = (setter, state, idx, val) => {
     const arr = [...state.imagesUrl];
@@ -312,14 +340,14 @@ function App() {
   };
 
   //登入
-  const handleLoginInputChange=(e)=>{
+  const handleLoginInputChange = (e) => {
     const { name, value } = e;
     console.log(name, value);
     setLoginData({
       ...loginData,
       [name]: value,
     });
-  }
+  };
 
   const loginSubmit = async () => {
     try {
@@ -330,12 +358,126 @@ function App() {
       console.log("登入成功:", response.data);
       alert("登入成功！");
       //把token 記錄起來
+      const { token, expired, uid } = response.data;
+      //測試抓取 token expired
+      //把 token 跟 expired 存到 cookie中
+      document.cookie = `hexToken=${token}; expires=${new Date(expired)}`;
+      // document.cookie = `hexUid=${uid}; expires=${new Date(expired)}`;
+      //請求前先帶上 token
+      axios.defaults.headers.common["Authorization"] = response.data.token;
       setTokenData(response.data.token);
+      // setUid(response.data.uid);
     } catch (error) {
       console.error("登入失敗:", error.response?.data || error.message);
       alert("登入失敗，請稍後再試");
     }
   };
+
+  //path
+  const selectPathSubmit = async () => {
+    console.log("我要確認path");
+    try {
+      const response = await axios.get(
+        `https://ec-course-api.hexschool.io/v2/api/${selectPath}/admin/products?page=1`
+      );
+      console.log(`${selectPath} 存在，可以使用:`, response.data);
+      alert(`${selectPath} 存在，可以使用`);
+      setIsPath(true);
+      setSelectPathData(selectPath);
+      setSelectPath('');
+      getProducts(selectPath);
+    } catch (error) {
+      console.error(`${selectPath} 不存在:`, error.response?.data || error.message);
+      alert(`${selectPath} 不存在或非該帳號所申請的 Path，請至六角 API 確認`);
+      setIsPath(false);
+    }
+  };
+
+  //新增商品
+  const produstCreateSubmit=async()=>{
+    console.log("我要新增產品");
+    try {
+      const response = await axios.post(
+        `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product`,
+        {
+          "data":productData
+        }
+      );
+      console.log("新增商品成功:", response.data);
+      alert("新增商品成功！");
+      getProducts(selectPathData);
+    } catch (error) {
+      console.error("新增商品失敗:", error.response?.data || error.message);
+      alert("新增商品失敗，請稍後再試");
+    }
+  }
+
+  //取得產品清單
+  const getProducts=async(pathData)=>{
+    console.log('我要取得產品清單');
+    
+    try {
+      const response = await axios.get(
+        `https://ec-course-api.hexschool.io/v2/api/${pathData}/admin/products`
+      );
+      setProducts(response.data.products);
+      console.log("取得產品列表成功", response.data);
+    } catch (error) {
+      console.error("取得產品列表失敗", error.response?.data || error.message);
+    }
+  }
+
+  //更新產品
+  const produstUpdateSubmit=async()=>{
+    console.log("我要更新產品");
+    
+    try {
+      const response = await axios.put(
+        `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product/${tempProduct.id}`,
+        {
+          "data":tempProduct
+        }
+      );
+      console.log("更新商品成功:", response.data);
+      alert("更新商品成功！");
+      getProducts(selectPathData);
+      closeModals();
+    } catch (error) {
+      console.error("更新商品失敗:", error.response?.data || error.message);
+      alert("更新商品失敗，請稍後再試");
+    }
+  }
+
+  //刪除產品
+  const produstDeleteSubmit=async()=>{
+    console.log("我要刪除產品");
+    
+    try {
+      const response = await axios.delete(
+        `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product/${tempProduct.id}`
+      );
+      console.log("刪除商品成功:", response.data);
+      alert("刪除商品成功！");
+      getProducts(selectPathData);
+      closeModals();
+    } catch (error) {
+      console.error("刪除商品失敗:", error.response?.data || error.message);
+      alert("刪除商品失敗，請稍後再試");
+    }
+  } 
+
+  useEffect(() => {
+    //抓cookie裡面的token
+    const token = document.cookie
+      .match(/(^|;)\s*hexToken\s*=\s*([^;]+)/)
+      ?.at(2);
+    // const uid = document.cookie.match(/(^|;)\s*hexUid\s*=\s*([^;]+)/)?.at(2);
+
+    //請求前先帶上 token
+    axios.defaults.headers.common["Authorization"] = token;
+    setTokenData(token);
+    // setUid(uid);
+  }, []);
   //撰寫區塊
 
   // --- 分頁內容渲染器 ---
@@ -391,13 +533,25 @@ function App() {
               subtitle="Secure Authorization"
             />
             <div className="space-y-4 mt-6">
-              <FormField label="Email" name="username" value={loginData.username} onChange={handleLoginInputChange}/>
-              <FormField label="Password" type="password" name="password"value={loginData.password} onChange={handleLoginInputChange}/>
-              <button className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95" 
-              onClick={() => {
+              <FormField
+                label="Email"
+                name="username"
+                value={loginData.username}
+                onChange={handleLoginInputChange}
+              />
+              <FormField
+                label="Password"
+                type="password"
+                name="password"
+                value={loginData.password}
+                onChange={handleLoginInputChange}
+              />
+              <button
+                className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+                onClick={() => {
                   loginSubmit();
                 }}
-                >
+              >
                 帳號登入
               </button>
             </div>
@@ -409,20 +563,58 @@ function App() {
           <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-sm text-slate-800 dark:text-white">
             <PageTitle
               icon={Globe}
-              title="3. Path 申請"
-              subtitle="Database Environment"
+              title="3. Path 申請 / 設定"
+              subtitle={`Database Environment ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
             />
-            <div className="flex flex-col md:flex-row gap-4 mt-6">
-              <input
-                value={path}
-                onChange={(e) => setPath(e.target.value)}
-                type="text"
-                placeholder="your-unique-path"
-                className="flex-1 p-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-              />
-              <button className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all">
-                確認開通路徑
-              </button>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 p-6">
+              {/* 建議外層加 gap 分開左右兩大區塊 */}
+              {/* 左側：修正為與右側一致或加上間距 */}
+              <div>
+                <h3 className="text-2xl font-black text-red-400 flex items-center gap-3">
+                  1. 我還沒有 Path
+                </h3>
+                {/* 加上 flex-col 與 gap 讓 Input 和 Button 不會黏在一起 */}
+                <div className="mt-6 flex flex-col gap-4">
+                  {/* <input
+                    value={addPath}
+                    onChange={(e) => setAddPath(e.target.value)}
+                    type="text"
+                    placeholder="請輸入 Path"
+                    className="p-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  /> */}
+                  <button
+                    className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all"
+                    onClick={() => {
+                      // 組合你的目標網址
+                      const targetUrl = `https://ec-course-api.hexschool.io/`;
+                      
+                      // 使用 window.open，第二個參數 '_blank' 代表另開分頁
+                      window.open(targetUrl, '_blank');
+                    }}
+                  >
+                    點我進入六角API 申請 Path
+                  </button>
+                </div>
+              </div>
+              {/* 右側：這部分的寫法很好，建議保留 */}
+              <div>
+                <h3 className="text-2xl font-black text-red-400 flex items-center gap-3">
+                  2. 我已經有 Path 了
+                </h3>
+                <div className="flex flex-col gap-4 mt-6">
+                  <input
+                    value={selectPath}
+                    onChange={(e) => setSelectPath(e.target.value)}
+                    type="text"
+                    placeholder="請輸入你的 Path"
+                    className="flex-1 p-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  />
+                  <button className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap" onClick={()=>{selectPathSubmit();}}>
+                    確認 Path
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -434,7 +626,7 @@ function App() {
               <PageTitle
                 icon={Package}
                 title="4. 商品資訊新增"
-                subtitle="Full Payload Entry"
+                subtitle={`Full Payload Entry ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
                 extra={
                   <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 px-6 py-3 rounded-2xl border dark:border-slate-700 text-slate-800 dark:text-white">
                     <span className="text-sm font-black">產品啟用</span>
@@ -452,11 +644,16 @@ function App() {
                           )
                         }
                       />
+                      
                       <div className="w-12 h-6 bg-slate-200 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                     </label>
                   </div>
+                  
+                  
                 }
+                
               />
+              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-6">
                 <div className="lg:col-span-2 space-y-10">
                   <SectionTitle
@@ -467,13 +664,13 @@ function App() {
                     <FormField
                       label="商品標題 (title)"
                       value={productData.title}
-                      onChange={(v) =>
-                        handleInputChange(
-                          setProductData,
-                          productData,
-                          "title",
-                          v
-                        )
+                      onChange={(e) =>
+                          handleInputChange(
+                            setProductData,
+                            productData,
+                            "title",
+                            e.target.value
+                          )
                       }
                       spanFull
                     />
@@ -485,7 +682,7 @@ function App() {
                           setProductData,
                           productData,
                           "category",
-                          v
+                          v.target.value
                         )
                       }
                     />
@@ -497,7 +694,7 @@ function App() {
                           setProductData,
                           productData,
                           "unit",
-                          v
+                          v.target.value
                         )
                       }
                     />
@@ -510,7 +707,7 @@ function App() {
                           setProductData,
                           productData,
                           "origin_price",
-                          parseInt(v) || 0
+                          parseInt(v.target.value) || 0
                         )
                       }
                     />
@@ -523,7 +720,7 @@ function App() {
                           setProductData,
                           productData,
                           "price",
-                          parseInt(v) || 0
+                          parseInt(v.target.value) || 0
                         )
                       }
                     />
@@ -535,7 +732,7 @@ function App() {
                           setProductData,
                           productData,
                           "description",
-                          v
+                          v.target.value
                         )
                       }
                       spanFull
@@ -590,7 +787,7 @@ function App() {
                           setProductData,
                           productData,
                           "imageUrl",
-                          v
+                          v.target.value
                         )
                       }
                     />
@@ -647,15 +844,15 @@ function App() {
                   onClick={() =>
                     setProductData({
                       ...emptyProductTemplate,
-                      origin_price: 100,
-                      price: 300,
+                      origin_price: 0,
+                      price: 0,
                     })
                   }
                   className="px-10 py-4 font-black text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   重置表單
                 </button>
-                <button className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 shadow-blue-500/30">
+                <button className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 shadow-blue-500/30" onClick={()=>{produstCreateSubmit()}}>
                   確認儲存商品
                 </button>
               </div>
@@ -670,17 +867,17 @@ function App() {
               <PageTitle
                 icon={List}
                 title="5. 商品列表編輯"
-                subtitle="Data Maintenance"
+                subtitle={`Data Maintenance ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
                 extra={
                   <div className="relative w-full md:w-80">
-                    <Search
+                    {/* <Search
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                       size={18}
-                    />
-                    <input
+                    /> 
+                     <input
                       placeholder="搜尋現有商品..."
                       className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm text-sm"
-                    />
+                    /> */}
                   </div>
                 }
               />
@@ -710,7 +907,7 @@ function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y dark:divide-slate-700 text-sm font-bold text-slate-800 dark:text-white">
-                  {MOCK_PRODUCTS.map((p) => (
+                  {products.map((p) => (
                     <tr
                       key={p.id}
                       className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors"
@@ -791,7 +988,7 @@ function App() {
                 <Globe size={14} /> 您的 API Path (必填)
               </label>
               <input
-                value={path || ""}
+                value={selectPathData || ""}
                 onChange={(e) => setPath(e.target.value)}
                 placeholder="your-unique-path"
                 className="w-full py-4 px-5 bg-white dark:bg-slate-900 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 font-mono shadow-sm"
@@ -933,11 +1130,11 @@ function App() {
             active={activeTab === "path"}
             onClick={() => setActiveTab("path")}
             icon={PlusSquare}
-            label="3. Path 申請"
+            label="3. Path 申請 / 設定"
             expanded={isSidebarOpen}
           />
           <NavItem
-          // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
+            // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
             disabled={!tokenData}
             active={activeTab === "product"}
             onClick={() => setActiveTab("product")}
@@ -946,7 +1143,7 @@ function App() {
             expanded={isSidebarOpen}
           />
           <NavItem
-          // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
+            // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
             disabled={!tokenData}
             active={activeTab === "productList"}
             onClick={() => setActiveTab("productList")}
@@ -956,7 +1153,7 @@ function App() {
           />
           <div className="mx-4 my-6 border-t border-slate-100 dark:border-slate-800 opacity-50"></div>
           <NavItem
-          // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
+            // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
             disabled={!tokenData}
             active={activeTab === "jsonUpload"}
             onClick={() => setActiveTab("jsonUpload")}
@@ -1003,25 +1200,22 @@ function App() {
                 : activeTab}
             </h2>
           </div>
-          {
-            tokenData?(
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-600 border border-slate-200 dark:border-slate-700 rounded-2xl font-black shadow-sm group active:scale-95 transition-all text-slate-800 dark:text-white"
-          >
-            <LogOut
-              size={20}
-              className="group-hover:translate-x-1 transition-transform"
-            />
-            <span className="hidden sm:inline font-black tracking-tight text-slate-800 dark:text-white" >
-              登出系統
-            </span>
-          </button>
-            ):(
-              <span>未登入</span>
-            )
-          }
-          
+          {tokenData ? (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-600 border border-slate-200 dark:border-slate-700 rounded-2xl font-black shadow-sm group active:scale-95 transition-all text-slate-800 dark:text-white"
+            >
+              <LogOut
+                size={20}
+                className="group-hover:translate-x-1 transition-transform"
+              />
+              <span className="hidden sm:inline font-black tracking-tight text-slate-800 dark:text-white">
+                登出系統
+              </span>
+            </button>
+          ) : (
+            <span>未登入</span>
+          )}
         </header>
 
         {/* Content Area */}
@@ -1110,7 +1304,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "title",
-                          val
+                          val.target.value
                         )
                       }
                       spanFull
@@ -1123,7 +1317,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "category",
-                          val
+                          val.target.value
                         )
                       }
                     />
@@ -1135,7 +1329,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "unit",
-                          val
+                          val.target.value
                         )
                       }
                     />
@@ -1148,7 +1342,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "origin_price",
-                          parseInt(val) || 0
+                          parseInt(val.target.value) || 0
                         )
                       }
                     />
@@ -1161,7 +1355,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "price",
-                          parseInt(val) || 0
+                          parseInt(val.target.value) || 0
                         )
                       }
                     />
@@ -1173,7 +1367,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "description",
-                          val
+                          val.target.value
                         )
                       }
                       spanFull
@@ -1228,7 +1422,7 @@ function App() {
                           setTempProduct,
                           tempProduct,
                           "imageUrl",
-                          val
+                          val.target.value
                         )
                       }
                     />
@@ -1289,7 +1483,7 @@ function App() {
                 放棄修改
               </button>
               <button
-                onClick={closeModals}
+                onClick={()=>{produstUpdateSubmit()}}
                 className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-blue-500/20"
               >
                 <Save size={18} /> 儲存並更新商品
@@ -1322,7 +1516,7 @@ function App() {
             </p>
             <div className="flex flex-col gap-4 text-slate-800 dark:text-white">
               <button
-                onClick={closeModals}
+                onClick={()=>{produstDeleteSubmit()}}
                 className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95"
               >
                 確認刪除
