@@ -78,7 +78,8 @@ const MOCK_PRODUCTS = [
   },
 ];
 
-const JSON_EXAMPLE_DATA = {
+const JSON_EXAMPLE_DATA = [
+  {
   title: "[賣]動物園造型衣服3",
   category: "衣服2",
   origin_price: 100,
@@ -89,7 +90,8 @@ const JSON_EXAMPLE_DATA = {
   is_enabled: 1,
   imageUrl: "主圖網址",
   imagesUrl: ["網址一", "網址二", "網址三", "網址四", "網址五"],
-};
+}
+];
 
 // --- 子組件與 UI 元件 ---
 
@@ -186,7 +188,7 @@ const FormField = ({
     <input
       type={type}
       value={value ?? ""}
-      onChange={onChange??""}
+      onChange={onChange ?? ""}
       name={name ?? ""}
       className="w-full p-4 rounded-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-slate-800 dark:text-slate-200 shadow-sm"
     />
@@ -234,23 +236,17 @@ function App() {
 
   // 初始化商品資料模板
   const emptyProductTemplate = {
-  "title": "",
-  "category": "",
-  "origin_price": 0,
-  "price": 0,
-  "unit": "",
-  "description": "",
-  "content": "",
-  "is_enabled": 0,
-  "imageUrl": "",
-  "imagesUrl": [
-    "",
-    "",
-    "",
-    "",
-    ""
-  ]
-};
+    title: "",
+    category: "",
+    origin_price: 0,
+    price: 0,
+    unit: "",
+    description: "",
+    content: "",
+    is_enabled: 0,
+    imageUrl: "",
+    imagesUrl: ["", "", "", "", ""],
+  };
 
   // 資料狀態管理
   const [tempProduct, setTempProduct] = useState(emptyProductTemplate);
@@ -259,13 +255,14 @@ function App() {
     origin_price: 0,
     price: 0,
   });
-  const [products,setProducts]=useState(MOCK_PRODUCTS);
+  const [products, setProducts] = useState(MOCK_PRODUCTS);
 
-  const [jsonInput, setJsonInput] = useState("");
+  const [jsonInput, setJsonInput] = useState([]);
   // const [addPath, setAddPath] = useState(""); //新增Path
   const [selectPath, setSelectPath] = useState(""); //選定Path
   const [isPath, setIsPath] = useState(false); //Path 確認狀態
   const [selectPathData, setSelectPathData] = useState(""); //已確認的Path
+  const [pageInfo, setPageInfo] = useState({}); //設定選定頁數
   // 事件處理程序
   const handleLogout = () => {
     setActiveTab("login");
@@ -295,16 +292,15 @@ function App() {
     setIsDelModalOpen(true);
   };
 
-  const handleInputChange = (setter, state, field, value) =>{
+  const handleInputChange = (setter, state, field, value) => {
     setter({ ...state, [field]: value });
     // console.log(field+" -> "+value);
-  }
+  };
 
   // const handleCreateProdustInputChange=(e)=>{
   //   // const{name,value}=e.target;
   //   console.log(e.value);
   // }
-
 
   const handleSubImgChange = (setter, state, idx, val) => {
     const arr = [...state.imagesUrl];
@@ -384,23 +380,26 @@ function App() {
       alert(`${selectPath} 存在，可以使用`);
       setIsPath(true);
       setSelectPathData(selectPath);
-      setSelectPath('');
+      setSelectPath("");
       getProducts(selectPath);
     } catch (error) {
-      console.error(`${selectPath} 不存在:`, error.response?.data || error.message);
+      console.error(
+        `${selectPath} 不存在:`,
+        error.response?.data || error.message
+      );
       alert(`${selectPath} 不存在或非該帳號所申請的 Path，請至六角 API 確認`);
       setIsPath(false);
     }
   };
 
   //新增商品
-  const produstCreateSubmit=async()=>{
+  const produstCreateSubmit = async () => {
     console.log("我要新增產品");
     try {
       const response = await axios.post(
         `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product`,
         {
-          "data":productData
+          data: productData,
         }
       );
       console.log("新增商品成功:", response.data);
@@ -410,32 +409,38 @@ function App() {
       console.error("新增商品失敗:", error.response?.data || error.message);
       alert("新增商品失敗，請稍後再試");
     }
-  }
+  };
 
   //取得產品清單
-  const getProducts=async(pathData)=>{
-    console.log('我要取得產品清單');
-    
+  const getProducts = async (pathData,page=1) => {
+    console.log("我要取得產品清單");
     try {
       const response = await axios.get(
-        `https://ec-course-api.hexschool.io/v2/api/${pathData}/admin/products`
+        `https://ec-course-api.hexschool.io/v2/api/${pathData}/admin/products?page=${page}`
       );
+      setPageInfo(response.data.pagination);
       setProducts(response.data.products);
       console.log("取得產品列表成功", response.data);
     } catch (error) {
       console.error("取得產品列表失敗", error.response?.data || error.message);
     }
-  }
+  };
+
+    //點擊換頁
+  const handleChangePage = (page) => {
+    console.log(page);
+    getProducts(selectPathData,page);
+  };
 
   //更新產品
-  const produstUpdateSubmit=async()=>{
+  const produstUpdateSubmit = async () => {
     console.log("我要更新產品");
-    
+
     try {
       const response = await axios.put(
         `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product/${tempProduct.id}`,
         {
-          "data":tempProduct
+          data: tempProduct,
         }
       );
       console.log("更新商品成功:", response.data);
@@ -446,12 +451,12 @@ function App() {
       console.error("更新商品失敗:", error.response?.data || error.message);
       alert("更新商品失敗，請稍後再試");
     }
-  }
+  };
 
   //刪除產品
-  const produstDeleteSubmit=async()=>{
+  const produstDeleteSubmit = async () => {
     console.log("我要刪除產品");
-    
+
     try {
       const response = await axios.delete(
         `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product/${tempProduct.id}`
@@ -464,7 +469,28 @@ function App() {
       console.error("刪除商品失敗:", error.response?.data || error.message);
       alert("刪除商品失敗，請稍後再試");
     }
-  } 
+  };
+
+  //JSON匯入
+  const jsonInputSubmit=async()=>{
+    console.log("我要匯入JSON囉!!");
+    await JSON.parse(jsonInput).forEach(async(item) => {
+      try {
+        const response = await axios.post(
+          `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product`,
+          {
+            data: item,
+          }
+        );
+        console.log("新增商品成功:", response.data);
+      } catch (error) {
+        console.error("新增商品失敗:", error.response?.data || error.message);
+      }
+    });
+    alert("JSON 匯入完成!!");
+    setJsonInput('');
+    getProducts(selectPathData);
+  }
 
   useEffect(() => {
     //抓cookie裡面的token
@@ -478,6 +504,8 @@ function App() {
     setTokenData(token);
     // setUid(uid);
   }, []);
+
+  
   //撰寫區塊
 
   // --- 分頁內容渲染器 ---
@@ -564,9 +592,11 @@ function App() {
             <PageTitle
               icon={Globe}
               title="3. Path 申請 / 設定"
-              subtitle={`Database Environment ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
+              subtitle={`Database Environment ${
+                isPath ? `| 已指定 Path: ${selectPathData}` : ""
+              }`}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 p-6">
               {/* 建議外層加 gap 分開左右兩大區塊 */}
               {/* 左側：修正為與右側一致或加上間距 */}
@@ -588,9 +618,9 @@ function App() {
                     onClick={() => {
                       // 組合你的目標網址
                       const targetUrl = `https://ec-course-api.hexschool.io/`;
-                      
+
                       // 使用 window.open，第二個參數 '_blank' 代表另開分頁
-                      window.open(targetUrl, '_blank');
+                      window.open(targetUrl, "_blank");
                     }}
                   >
                     點我進入六角API 申請 Path
@@ -610,7 +640,12 @@ function App() {
                     placeholder="請輸入你的 Path"
                     className="flex-1 p-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                   />
-                  <button className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap" onClick={()=>{selectPathSubmit();}}>
+                  <button
+                    className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap"
+                    onClick={() => {
+                      selectPathSubmit();
+                    }}
+                  >
                     確認 Path
                   </button>
                 </div>
@@ -626,7 +661,9 @@ function App() {
               <PageTitle
                 icon={Package}
                 title="4. 商品資訊新增"
-                subtitle={`Full Payload Entry ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
+                subtitle={`Full Payload Entry ${
+                  isPath ? `| 已指定 Path: ${selectPathData}` : ""
+                }`}
                 extra={
                   <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 px-6 py-3 rounded-2xl border dark:border-slate-700 text-slate-800 dark:text-white">
                     <span className="text-sm font-black">產品啟用</span>
@@ -644,16 +681,13 @@ function App() {
                           )
                         }
                       />
-                      
+
                       <div className="w-12 h-6 bg-slate-200 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                     </label>
                   </div>
-                  
-                  
                 }
-                
               />
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-6">
                 <div className="lg:col-span-2 space-y-10">
                   <SectionTitle
@@ -665,12 +699,12 @@ function App() {
                       label="商品標題 (title)"
                       value={productData.title}
                       onChange={(e) =>
-                          handleInputChange(
-                            setProductData,
-                            productData,
-                            "title",
-                            e.target.value
-                          )
+                        handleInputChange(
+                          setProductData,
+                          productData,
+                          "title",
+                          e.target.value
+                        )
                       }
                       spanFull
                     />
@@ -852,7 +886,12 @@ function App() {
                 >
                   重置表單
                 </button>
-                <button className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 shadow-blue-500/30" onClick={()=>{produstCreateSubmit()}}>
+                <button
+                  className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 shadow-blue-500/30"
+                  onClick={() => {
+                    produstCreateSubmit();
+                  }}
+                >
                   確認儲存商品
                 </button>
               </div>
@@ -867,7 +906,9 @@ function App() {
               <PageTitle
                 icon={List}
                 title="5. 商品列表編輯"
-                subtitle={`Data Maintenance ${isPath ? `| 已指定 Path: ${selectPathData}` : ""}`}
+                subtitle={`Data Maintenance ${
+                  isPath ? `| 已指定 Path: ${selectPathData}` : ""
+                }`}
                 extra={
                   <div className="relative w-full md:w-80">
                     {/* <Search
@@ -972,6 +1013,72 @@ function App() {
                 </tbody>
               </table>
             </div>
+            {/* 分頁 */}
+            <div className="flex justify-center mt-8 mb-3">
+              <nav aria-label="Page navigation">
+                <ul className="flex items-center gap-2">
+                  {/* 上一頁 */}
+                  <li>
+                    <button
+                      onClick={() =>
+                        handleChangePage(pageInfo.current_page - 1)
+                      }
+                      disabled={!pageInfo.has_pre}
+                      className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all
+            ${
+              !pageInfo.has_pre
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                : "bg-white text-gray-700 hover:border-blue-500 hover:text-blue-600 active:scale-95 border-gray-300"
+            }`}
+                    >
+                      <span className="text-lg">&laquo;</span>
+                    </button>
+                  </li>
+
+                  {/* 頁碼 */}
+                  {Array.from({ length: pageInfo.total_pages }).map(
+                    (_, index) => {
+                      const pageNum = index + 1;
+                      const isActive = pageInfo.current_page === pageNum;
+
+                      return (
+                        <li key={pageNum}>
+                          <button
+                            onClick={() => handleChangePage(pageNum)}
+                            className={`flex items-center justify-center w-10 h-10 rounded-lg border font-bold transition-all
+                ${
+                  isActive
+                    ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
+                    : "bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-500 active:scale-95"
+                }`}
+                          >
+                            {pageNum}
+                          </button>
+                        </li>
+                      );
+                    }
+                  )}
+
+                  {/* 下一頁 */}
+                  <li>
+                    <button
+                      onClick={() =>
+                        handleChangePage(pageInfo.current_page + 1)
+                      }
+                      disabled={!pageInfo.has_next}
+                      className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all
+            ${
+              !pageInfo.has_next
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                : "bg-white text-gray-700 hover:border-blue-500 hover:text-blue-600 active:scale-95 border-gray-300"
+            }`}
+                    >
+                      <span className="text-lg">&raquo;</span>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
         );
 
@@ -1011,7 +1118,7 @@ function App() {
               placeholder="在此貼上您的 JSON 資料..."
               className="w-full h-[350px] p-6 font-mono text-sm bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-blue-600 transition-all shadow-inner"
             />
-            <button className="mt-8 px-14 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-3">
+            <button className="mt-8 px-14 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-3" onClick={()=>{jsonInputSubmit()}}>
               <UploadCloud size={22} /> 執行批量上傳
             </button>
           </div>
@@ -1483,7 +1590,9 @@ function App() {
                 放棄修改
               </button>
               <button
-                onClick={()=>{produstUpdateSubmit()}}
+                onClick={() => {
+                  produstUpdateSubmit();
+                }}
                 className="px-14 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-blue-500/20"
               >
                 <Save size={18} /> 儲存並更新商品
@@ -1516,7 +1625,9 @@ function App() {
             </p>
             <div className="flex flex-col gap-4 text-slate-800 dark:text-white">
               <button
-                onClick={()=>{produstDeleteSubmit()}}
+                onClick={() => {
+                  produstDeleteSubmit();
+                }}
                 className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95"
               >
                 確認刪除
