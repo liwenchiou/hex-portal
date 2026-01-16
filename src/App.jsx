@@ -518,7 +518,9 @@ function App() {
     //請求前先帶上 token
     axios.defaults.headers.common["Authorization"] = token;
     setTokenData(token);
+    setActiveTab(!token?"register":"path");
     // setUid(uid);
+
 
     // 定義檢查函數
   const checkWidth = () => {
@@ -535,6 +537,7 @@ function App() {
   // 監聽視窗縮放，讓體驗更流暢
   window.addEventListener('resize', checkWidth);
   return () => window.removeEventListener('resize', checkWidth);
+
   }, []);
 
   
