@@ -270,6 +270,7 @@ function App() {
     document.cookie = `hexToken=; expires=; uid= `;
     document.cookie = `hexUid=; `;
     setIsPath(false);
+    setLoginData({});
   };
 
   const closeModals = () => {
@@ -362,10 +363,19 @@ function App() {
       //請求前先帶上 token
       axios.defaults.headers.common["Authorization"] = response.data.token;
       setTokenData(response.data.token);
+      setActiveTab("path");
       // setUid(response.data.uid);
     } catch (error) {
+      setLoginData({
+        ...loginData,
+        password:''
+      })
       console.error("登入失敗:", error.response?.data || error.message);
-      alert("登入失敗，請稍後再試");
+      // alert("登入失敗，請稍後再試");
+      const errorMessage=error.response.data.error.message;
+      // console.log(error.response.data.error.message);
+      // console.log(error);
+      alert(`登入失敗\n${errorMessage}`);
     }
   };
 
@@ -382,6 +392,7 @@ function App() {
       setSelectPathData(selectPath);
       setSelectPath("");
       getProducts(selectPath);
+      setActiveTab("product");
     } catch (error) {
       console.error(
         `${selectPath} 不存在:`,
@@ -407,7 +418,9 @@ function App() {
       getProducts(selectPathData);
     } catch (error) {
       console.error("新增商品失敗:", error.response?.data || error.message);
-      alert("新增商品失敗，請稍後再試");
+      const errorMessage=error.response.data.message.join(',');
+      console.log(error.response.data.message.join(','));
+      alert(`新增商品失敗\n${errorMessage}`);
     }
   };
 
@@ -449,7 +462,10 @@ function App() {
       closeModals();
     } catch (error) {
       console.error("更新商品失敗:", error.response?.data || error.message);
-      alert("更新商品失敗，請稍後再試");
+      // alert("更新商品失敗，請稍後再試");
+      const errorMessage=error.response.data.message.join(',');
+      console.log(error.response.data.message.join(','));
+      alert(`新增商品失敗\n${errorMessage}`);
     }
   };
 
@@ -503,6 +519,22 @@ function App() {
     axios.defaults.headers.common["Authorization"] = token;
     setTokenData(token);
     // setUid(uid);
+
+    // 定義檢查函數
+  const checkWidth = () => {
+    if (window.innerWidth < 768) { // 768px 是 Tailwind 的 md 標準
+      setIsSidebarOpen(false);
+    } else {
+      setIsSidebarOpen(true);
+    }
+  };
+
+  // 初始化執行一次
+  checkWidth();
+
+  // 監聽視窗縮放，讓體驗更流暢
+  window.addEventListener('resize', checkWidth);
+  return () => window.removeEventListener('resize', checkWidth);
   }, []);
 
   
@@ -1258,7 +1290,6 @@ function App() {
             label="5. 商品列表編輯"
             expanded={isSidebarOpen}
           />
-          <div className="mx-4 my-6 border-t border-slate-100 dark:border-slate-800 opacity-50"></div>
           <NavItem
             // 當 tokenData 為空字串時，!tokenData 為 true，按鈕會被禁用
             disabled={!tokenData}
@@ -1268,8 +1299,6 @@ function App() {
             label="6. JSON 上傳"
             expanded={isSidebarOpen}
           />
-          <div className="mx-4 my-6 border-t border-slate-100 dark:border-slate-800 opacity-50"></div>
-
           <NavItem
             active={activeTab === "docs"}
             onClick={() => setActiveTab("docs")}
