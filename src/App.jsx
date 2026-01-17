@@ -233,6 +233,9 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDelModalOpen, setIsDelModalOpen] = useState(false);
   const [isExModalOpen, setIsExModalOpen] = useState(false);
+// 警告用的 Modal 顯示控制
+const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+const [alertMsg, setAlertMsg] = useState(""); // 儲存要顯示的錯誤訊息
 
   // 初始化商品資料模板
   const emptyProductTemplate = {
@@ -353,7 +356,8 @@ function App() {
         loginData
       );
       console.log("登入成功:", response.data);
-      alert("登入成功！");
+      showAlert("登入成功！");
+      // alert("登入成功！");
       //把token 記錄起來
       const { token, expired, uid } = response.data;
       //測試抓取 token expired
@@ -375,7 +379,7 @@ function App() {
       const errorMessage=error.response.data.error.message;
       // console.log(error.response.data.error.message);
       // console.log(error);
-      alert(`登入失敗\n${errorMessage}`);
+      showAlert(`登入失敗\n${errorMessage}`);
     }
   };
 
@@ -387,7 +391,7 @@ function App() {
         `https://ec-course-api.hexschool.io/v2/api/${selectPath}/admin/products?page=1`
       );
       console.log(`${selectPath} 存在，可以使用:`, response.data);
-      alert(`${selectPath} 存在，可以使用`);
+      showAlert(`${selectPath} 存在，可以使用`);
       setIsPath(true);
       setSelectPathData(selectPath);
       setSelectPath("");
@@ -398,7 +402,7 @@ function App() {
         `${selectPath} 不存在:`,
         error.response?.data || error.message
       );
-      alert(`${selectPath} 不存在或非該帳號所申請的 Path，請至六角 API 確認`);
+      showAlert(`${selectPath} 不存在或非該帳號所申請的 Path，請至六角 API 確認`);
       setIsPath(false);
     }
   };
@@ -414,13 +418,13 @@ function App() {
         }
       );
       console.log("新增商品成功:", response.data);
-      alert("新增商品成功！");
+      showAlert("新增商品成功！");
       getProducts(selectPathData);
     } catch (error) {
       console.error("新增商品失敗:", error.response?.data || error.message);
       const errorMessage=error.response.data.message.join(',');
       console.log(error.response.data.message.join(','));
-      alert(`新增商品失敗\n${errorMessage}`);
+      showAlert(`新增商品失敗\n${errorMessage}`);
     }
   };
 
@@ -457,7 +461,7 @@ function App() {
         }
       );
       console.log("更新商品成功:", response.data);
-      alert("更新商品成功！");
+      showAlert("更新商品成功！");
       getProducts(selectPathData);
       closeModals();
     } catch (error) {
@@ -465,7 +469,7 @@ function App() {
       // alert("更新商品失敗，請稍後再試");
       const errorMessage=error.response.data.message.join(',');
       console.log(error.response.data.message.join(','));
-      alert(`新增商品失敗\n${errorMessage}`);
+      showAlert(`更新商品失敗\n${errorMessage}`);
     }
   };
 
@@ -478,12 +482,12 @@ function App() {
         `https://ec-course-api.hexschool.io/v2/api/${selectPathData}/admin/product/${tempProduct.id}`
       );
       console.log("刪除商品成功:", response.data);
-      alert("刪除商品成功！");
+      showAlert("刪除商品成功！");
       getProducts(selectPathData);
       closeModals();
     } catch (error) {
       console.error("刪除商品失敗:", error.response?.data || error.message);
-      alert("刪除商品失敗，請稍後再試");
+      showAlert("刪除商品失敗，請稍後再試");
     }
   };
 
@@ -503,7 +507,7 @@ function App() {
         console.error("新增商品失敗:", error.response?.data || error.message);
       }
     });
-    alert("JSON 匯入完成!!");
+    showAlert("JSON 匯入完成!!");
     setJsonInput('');
     getProducts(selectPathData);
   }
@@ -539,6 +543,14 @@ function App() {
   return () => window.removeEventListener('resize', checkWidth);
 
   }, []);
+
+  const showAlert = (message) => {
+  // 如果傳進來的是陣列，就轉成字串，或者是處理成多行顯示
+  const formattedMsg = Array.isArray(message) ? message.join('、') : message;
+  
+  setAlertMsg(formattedMsg);
+  setIsAlertModalOpen(true);
+};
 
   
   //撰寫區塊
@@ -1203,7 +1215,7 @@ function App() {
                     ID，並隨時管理個人練習用資料庫。
                   </p>
                   <a
-                    href="https://course-api.hexschool.io/"
+                    href="https://ec-course-api.hexschool.io/"
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-5 bg-blue-600 text-white rounded-2xl font-black transition-all shadow-lg active:scale-95 shadow-blue-500/20"
@@ -1669,6 +1681,37 @@ function App() {
                 className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold"
               >
                 取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 警告專用 Modal (取代 alert) */}
+      {isAlertModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-xl overflow-hidden transform transition-all">
+            <div className="p-6 text-center">
+              {/* 警告圖示 */}
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4">
+                <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">系統提示</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {alertMsg}
+              </p>
+            </div>
+            
+            <div className="bg-slate-50 dark:bg-slate-700/50 px-6 py-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsAlertModalOpen(false)}
+                className="w-full py-2.5 px-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-medium hover:opacity-90 transition-opacity"
+              >
+                我知道了
               </button>
             </div>
           </div>
