@@ -552,6 +552,36 @@ const [alertMsg, setAlertMsg] = useState(""); // 儲存要顯示的錯誤訊息
   setIsAlertModalOpen(true);
 };
 
+//驗證登入
+const checkUser=(async()=>{
+  console.log("我要驗證登入！！");
+  try {
+      const response = await axios.post(
+        `https://ec-course-api.hexschool.io/v2/api/user/check`
+      );
+      console.log("驗證登入成功:", response.data);
+      //抓cookie裡面的token
+      const token = document.cookie
+        .match(/(^|;)\s*hexToken\s*=\s*([^;]+)/)
+        ?.at(2);
+      // const uid = document.cookie.match(/(^|;)\s*hexUid\s*=\s*([^;]+)/)?.at(2);
+
+      setTokenData(token);
+      // showAlert("新增商品成功！");
+      // getProducts(selectPathData);
+    } catch (error) {
+      console.error("驗證登入失敗:", error.response?.data || error.message);
+      setTokenData('');
+      // const errorMessage=error.response.data.message.join(',');
+      // console.log(error.response.data.message.join(','));
+      // showAlert(`新增商品失敗\n${errorMessage}`);
+    }
+})
+
+useEffect(()=>{
+checkUser();
+},[activeTab]);
+
   
   //撰寫區塊
 
